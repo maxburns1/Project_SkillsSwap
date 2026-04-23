@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Campus SkillSwap{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-user-circle"></i> Your Dashboard</h1>
+        <p class="text-muted">Welcome, {{ user.username }}!</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'skill_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Post a Skill
+        </a>
+    </div>
+</div>
+
+<!-- Navigation tabs -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="my-skills-tab" data-bs-toggle="tab" data-bs-target="#my-skills" type="button" role="tab">
+            <i class="fas fa-lightbulb"></i> My Skills ({{ my_skills.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="received-bookings-tab" data-bs-toggle="tab" data-bs-target="#received-bookings" type="button" role="tab">
+            <i class="fas fa-inbox"></i> Booking Requests ({{ received_bookings.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="my-bookings-tab" data-bs-toggle="tab" data-bs-target="#my-bookings" type="button" role="tab">
+            <i class="fas fa-calendar-check"></i> My Requests ({{ my_bookings.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+            <i class="fas fa-star"></i> Reviews ({{ my_reviews.count }})
+        </button>
+    </li>
+</ul>
+
+<!-- Tab content -->
+<div class="tab-content">
+    
+    <!-- MY SKILLS TAB -->
+    <div class="tab-pane fade show active" id="my-skills" role="tabpanel">
+        {% if my_skills %}
+            <div class="row">
+                {% for skill in my_skills %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ skill.title }}</h5>
+                                <span class="badge bg-info mb-2">{{ skill.get_category_display }}</span>
+                                
+                                <!-- Rating -->
+                                {% if skill.average_rating %}
+                                    <div class="stars mb-2">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= skill.average_rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <small>({{ skill.reviews.count }} reviews)</small>
+                                    </div>
+                                {% endif %}
+                                
+                                <p class="text-muted">{{ skill.description|truncatewords:15 }}</p>
+                                
+                                <!-- Price -->
+                                <p>
+                                    {% if skill.is_free %}
+                                        <span class="badge bg-success">FREE</span>
+                                    {% elif skill.price %}
+                                        <span class="badge bg-primary">${{ skill.price }}/session</span>
+                                    {% endif %}
+                                </p>
+                                
+                                <!-- Status -->
+                                <p>
+                                    {% if skill.availability_status == 'available' %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% elif skill.availability_status == 'booked' %}
+                                        <span class="badge bg-warning">Booked Out</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unavailable</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <a href="{% url 'skill_detail' skill.pk %}" class="btn btn-sm btn-outline-primary me-2">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{% url 'skill_update' skill.pk %}" class="btn btn-sm btn-outline-secondary me-2">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No skills posted yet</h5>
+                    <p class="text-muted">Share your first skill with the campus!</p>
+                    <a href="{% url 'skill_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Post a Skill
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- RECEIVED BOOKINGS TAB -->
+    <div class="tab-pane fade" id="received-bookings" role="tabpanel">
+        {% if received_bookings %}
+            <div class="row">
+                {% for booking in received_bookings %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5>{{ booking.skill.title }}</h5>
+                                <p class="text-muted">
+                                    <i class="fas fa-user"></i> Requested by <strong>{{ booking.requester.username }}</strong>
+                                </p>
+                                <p>
+                                    <strong>Requested Date:</strong> {{ booking.requested_date|date:"M d, Y H:i" }}
+                                </p>
+                                
+                                {% if booking.message %}
+                                    <p class="text-muted">
+                                        <strong>Message:</strong><br>
+                                        {{ booking.message }}
+                                    </p>
+                                {% endif %}
+                                
+                                <!-- Status badge -->
+                                <p>
+                                    {% if booking.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif booking.status == 'accepted' %}
+                                        <span class="badge bg-success">Accepted</span>
+                                    {% elif booking.status == 'declined' %}
+                                        <span class="badge bg-danger">Declined</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            
+                            <!-- Action buttons for pending requests -->
+                            {% if booking.status == 'pending' %}
+                                <div class="card-footer bg-white">
+                                    <form method="POST" action="{% url 'booking_update' booking.pk %}" class="d-flex gap-2">
+                                        {% csrf_token %}
+                                        <button type="submit" name="action" value="accept" class="btn btn-sm btn-success flex-grow-1">
+                                            <i class="fas fa-check"></i> Accept
+                                        </button>
+                                        <button type="submit" name="action" value="decline" class="btn btn-sm btn-danger flex-grow-1">
+                                            <i class="fas fa-times"></i> Decline
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No booking requests yet</h5>
+                    <p class="text-muted">When students book your skills, they'll appear here</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- MY BOOKINGS TAB -->
+    <div class="tab-pane fade" id="my-bookings" role="tabpanel">
+        {% if my_bookings %}
+            <div class="row">
+                {% for booking in my_bookings %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5>{{ booking.skill.title }}</h5>
+                                <p class="text-muted">
+                                    <i class="fas fa-user"></i> Offered by <strong>{{ booking.skill.owner.username }}</strong>
+                                </p>
+                                <p>
+                                    <strong>Requested Date:</strong> {{ booking.requested_date|date:"M d, Y H:i" }}
+                                </p>
+                                
+                                <!-- Status badge -->
+                                <p>
+                                    {% if booking.status == 'pending' %}
+                                        <span class="badge bg-warning">Waiting for response...</span>
+                                    {% elif booking.status == 'accepted' %}
+                                        <span class="badge bg-success">Accepted! Get in touch</span>
+                                    {% elif booking.status == 'declined' %}
+                                        <span class="badge bg-danger">Declined</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <a href="{% url 'skill_detail' booking.skill.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View Skill
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No booking requests yet</h5>
+                    <p class="text-muted">Check out our skills and request a booking!</p>
+                    <a href="{% url 'skill_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Browse Skills
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- REVIEWS TAB -->
+    <div class="tab-pane fade" id="reviews" role="tabpanel">
+        {% if my_reviews %}
+            <div class="row">
+                {% for review in my_reviews %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5>{{ review.skill.title }}</h5>
+                                <p class="text-muted">
+                                    <i class="fas fa-user"></i> Reviewed by <strong>{{ review.reviewer.username }}</strong>
+                                </p>
+                                
+                                <!-- Rating stars -->
+                                <div class="stars mb-2">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if review.comment %}
+                                    <p class="text-muted">{{ review.comment }}</p>
+                                {% endif %}
+                                
+                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-star text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No reviews yet</h5>
+                    <p class="text-muted">When students review your skills, they'll appear here</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+</div>
+{% endblock %}

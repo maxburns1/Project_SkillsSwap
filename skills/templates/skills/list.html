@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Skills - Campus SkillSwap{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <h1><i class="fas fa-search"></i> Browse All Skills</h1>
+        <p class="text-muted">Find amazing skills from fellow students</p>
+    </div>
+    <div class="col-lg-4 text-end">
+        {% if user.is_authenticated %}
+            <a href="{% url 'skill_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Post a Skill
+            </a>
+        {% else %}
+            <a href="{% url 'register' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Join Now
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <!-- Search box -->
+            <div class="col-md-7">
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="form-control" 
+                    placeholder="Search skills by title or description..."
+                    value="{{ search_query }}"
+                >
+            </div>
+            
+            <!-- Category filter -->
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Search button -->
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Display skills or no results message -->
+{% if skills %}
+    <div class="row">
+        {% for skill in skills %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <!-- Skill image (if available) -->
+                    {% if skill.image %}
+                        <img src="{{ skill.image.url }}" class="card-img-top" alt="{{ skill.title }}" style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <!-- Title and category -->
+                        <h5 class="card-title">{{ skill.title }}</h5>
+                        <span class="badge bg-info mb-2">{{ skill.get_category_display }}</span>
+                        
+                        <!-- Rating -->
+                        {% if skill.average_rating %}
+                            <div class="stars mb-2">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= skill.average_rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ skill.reviews.count }} reviews)</small>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Description preview -->
+                        <p class="card-text text-muted">
+                            {{ skill.description|truncatewords:20 }}
+                        </p>
+                        
+                        <!-- Owner info -->
+                        <p class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> by {{ skill.owner.username }}
+                            </small>
+                        </p>
+                        
+                        <!-- Price or Free -->
+                        <p class="mb-3">
+                            {% if skill.is_free %}
+                                <span class="badge bg-success">FREE</span>
+                            {% elif skill.price %}
+                                <span class="badge bg-primary">${{ skill.price }}/session</span>
+                            {% endif %}
+                        </p>
+                        
+                        <!-- Availability status -->
+                        <p class="mb-3">
+                            {% if skill.availability_status == 'available' %}
+                                <span class="badge bg-success">Available</span>
+                            {% elif skill.availability_status == 'booked' %}
+                                <span class="badge bg-warning">Booked Out</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Unavailable</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- View button -->
+                    <div class="card-footer bg-white border-top-0">
+                        <a href="{% url 'skill_detail' skill.pk %}" class="btn btn-outline-primary w-100">
+                            View Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- No skills found -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
+            <h5 class="mt-3">No skills found</h5>
+            <p class="text-muted">Try a different search or check back later!</p>
+            
+            {% if user.is_authenticated %}
+                <p>Be the first to post a skill!</p>
+                <a href="{% url 'skill_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Post a Skill
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

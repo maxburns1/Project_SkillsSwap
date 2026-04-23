@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Campus SkillSwap{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="card-title mb-4">
+                    <i class="fas fa-lightbulb"></i> {{ title }}
+                </h2>
+                
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Display any non-field errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Title field -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Skill Title *</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <small class="text-danger d-block">{{ form.title.errors }}</small>
+                        {% endif %}
+                        <small class="text-muted">E.g., Piano Lessons, Web Design Help, Spanish Tutoring</small>
+                    </div>
+                    
+                    <!-- Description field -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description *</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <small class="text-danger d-block">{{ form.description.errors }}</small>
+                        {% endif %}
+                        <small class="text-muted">Tell people what you offer, your experience, and any requirements</small>
+                    </div>
+                    
+                    <!-- Category field -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Category *</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <small class="text-danger d-block">{{ form.category.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Image upload -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Upload Image (Optional)</label>
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                            <small class="text-danger d-block">{{ form.image.errors }}</small>
+                        {% endif %}
+                        <small class="text-muted">A nice image helps attract students!</small>
+                    </div>
+                    
+                    <!-- Pricing section -->
+                    <hr>
+                    <h5 class="mb-3"><i class="fas fa-dollar-sign"></i> Pricing</h5>
+                    
+                    <!-- Is Free checkbox -->
+                    <div class="mb-3 form-check">
+                        {{ form.is_free }}
+                        <label class="form-check-label fw-bold" for="id_is_free">
+                            I want to offer this skill for free
+                        </label>
+                    </div>
+                    
+                    <!-- Price field -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Price per Session (if not free)</label>
+                        {{ form.price }}
+                        {% if form.price.errors %}
+                            <small class="text-danger d-block">{{ form.price.errors }}</small>
+                        {% endif %}
+                        <small class="text-muted">Leave empty if free</small>
+                    </div>
+                    
+                    <!-- Availability section -->
+                    <hr>
+                    <h5 class="mb-3"><i class="fas fa-calendar"></i> Availability</h5>
+                    
+                    <!-- Availability status -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Are you available? *</label>
+                        {{ form.availability_status }}
+                        {% if form.availability_status.errors %}
+                            <small class="text-danger d-block">{{ form.availability_status.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Contact section -->
+                    <hr>
+                    <h5 class="mb-3"><i class="fas fa-envelope"></i> Contact Preference</h5>
+                    
+                    <!-- Contact preference -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">How should students contact you? *</label>
+                        {{ form.contact_preference }}
+                        {% if form.contact_preference.errors %}
+                            <small class="text-danger d-block">{{ form.contact_preference.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Submit and Cancel buttons -->
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-end mt-4">
+                        <a href="{% url 'skill_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Skill
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

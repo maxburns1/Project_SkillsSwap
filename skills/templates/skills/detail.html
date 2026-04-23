@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ skill.title }} - Campus SkillSwap{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left side: Skill details -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <!-- Skill image -->
+                {% if skill.image %}
+                    <img src="{{ skill.image.url }}" class="img-fluid rounded mb-4" alt="{{ skill.title }}" style="max-height: 400px; width: 100%; object-fit: cover;">
+                {% endif %}
+                
+                <!-- Title and basic info -->
+                <h1>{{ skill.title }}</h1>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-user"></i> Posted by <strong>{{ skill.owner.username }}</strong>
+                    on {{ skill.created_at|date:"M d, Y" }}
+                </p>
+                
+                <!-- Category and status badges -->
+                <div class="mb-3">
+                    <span class="badge bg-info me-2">{{ skill.get_category_display }}</span>
+                    {% if skill.availability_status == 'available' %}
+                        <span class="badge bg-success">Available</span>
+                    {% elif skill.availability_status == 'booked' %}
+                        <span class="badge bg-warning">Booked Out</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Unavailable</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Rating -->
+                {% if average_rating %}
+                    <div class="mb-3">
+                        <div class="stars">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= average_rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <strong>{{ average_rating|floatformat:1 }}/5.0</strong> ({{ reviews.count }} reviews)
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Price info -->
+                <div class="alert alert-light mb-3">
+                    <h6>Pricing:</h6>
+                    {% if skill.is_free %}
+                        <p class="mb-0"><strong>FREE</strong> - No charge</p>
+                    {% elif skill.price %}
+                        <p class="mb-0"><strong>${{ skill.price }}</strong> per session</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Contact preference -->
+                <div class="alert alert-light mb-3">
+                    <h6>Contact Preference:</h6>
+                    <p class="mb-0"><i class="fas fa-envelope"></i> {{ skill.get_contact_preference_display }}</p>
+                </div>
+                
+                <!-- Description -->
+                <h5>Description</h5>
+                <p>{{ skill.description }}</p>
+                
+                <!-- Edit/Delete buttons for owner -->
+                {% if user == skill.owner %}
+                    <div class="mb-4">
+                        <a href="{% url 'skill_update' skill.pk %}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Reviews section -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Reviews & Ratings ({{ reviews.count }})</h5>
+            </div>
+            <div class="card-body">
+                <!-- Review creation button -->
+                {% if user.is_authenticated and can_review and not user_already_reviewed %}
+                    <a href="{% url 'review_create' skill.pk %}" class="btn btn-primary mb-3">
+                        <i class="fas fa-comment"></i> Leave a Review
+                    </a>
+                {% elif user_already_reviewed %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> You have already reviewed this skill
+                    </div>
+                {% elif user == skill.owner %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> You cannot review your own skill
+                    </div>
+                {% endif %}
+                
+                <!-- Display reviews -->
+                {% if reviews %}
+                    {% for review in reviews %}
+                        <div class="border-bottom pb-3 mb-3">
+                            <!-- Reviewer name and rating -->
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-user-circle"></i> {{ review.reviewer.username }}
+                                    </h6>
+                                    <div class="stars">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <!-- Delete button for reviewer -->
+                                {% if user == review.reviewer %}
+                                    <a href="{% url 'review_delete' review.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this review?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Review comment -->
+                            {% if review.comment %}
+                                <p class="text-muted mt-2 mb-0">{{ review.comment }}</p>
+                            {% endif %}
+                            
+                            <!-- Date -->
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No reviews yet. Be the first!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right side: Booking form -->
+    <div class="col-lg-4">
+        <!-- Booking/Action card -->
+        <div class="card mb-4" style="position: sticky; top: 20px;">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Book This Skill</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated and user != skill.owner %}
+                    <!-- If skill is available, show booking button -->
+                    {% if skill.availability_status == 'available' %}
+                        <a href="{% url 'booking_create' skill.pk %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-calendar-check"></i> Request Booking
+                        </a>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle"></i> This skill is not currently available
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <!-- Contact info -->
+                    <h6>Contact {{ skill.owner.username }}</h6>
+                    <p class="text-muted">
+                        Contact preference: <strong>{{ skill.get_contact_preference_display }}</strong>
+                    </p>
+                    
+                {% elif user == skill.owner %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> This is your skill
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-2">You must be logged in to book this skill.</p>
+                    <a href="{% url 'login' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-sign-in-alt"></i> Log In to Book
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Owner info card -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">About the Instructor</h5>
+            </div>
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle" style="font-size: 3rem; color: #667eea;"></i>
+                <h6 class="mt-2">{{ skill.owner.username }}</h6>
+                <p class="text-muted">
+                    {{ skill.owner.skills.count }} skill{{ skill.owner.skills.count|pluralize }} posted
+                </p>
+                
+                <!-- Reviews they received -->
+                {% if skill.owner.skills.0.reviews %}
+                    <div class="text-center">
+                        <strong>Highly Rated</strong>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

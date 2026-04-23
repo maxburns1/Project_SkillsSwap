@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register - Campus SkillSwap{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </h2>
+                
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Display all form errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Username field -->
+                    <div class="mb-3">
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <small class="text-danger">{{ form.username.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Email field -->
+                    <div class="mb-3">
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <small class="text-danger">{{ form.email.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Password field -->
+                    <div class="mb-3">
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}
+                            <small class="text-danger">{{ form.password1.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Confirm Password field -->
+                    <div class="mb-3">
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                            <small class="text-danger">{{ form.password2.errors }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-check"></i> Create Account
+                    </button>
+                </form>
+                
+                <!-- Link to login -->
+                <p class="text-center">
+                    Already have an account? 
+                    <a href="{% url 'login' %}" class="text-primary fw-bold">Log in here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
