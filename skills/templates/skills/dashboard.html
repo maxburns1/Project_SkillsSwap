@@ -35,7 +35,12 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
-            <i class="fas fa-star"></i> Reviews ({{ my_reviews.count }})
+            <i class="fas fa-star"></i> User Reviews ({{ all_reviews_received.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="session-reviews-tab" data-bs-toggle="tab" data-bs-target="#session-reviews" type="button" role="tab">
+            <i class="fas fa-heart"></i> Session Reviews ({{ skill_reviews_received.count }})
         </button>
     </li>
 </ul>
@@ -237,32 +242,142 @@
         {% endif %}
     </div>
     
-    <!-- REVIEWS TAB -->
+    <!-- REVIEWS TAB - About You as a User -->
     <div class="tab-pane fade" id="reviews" role="tabpanel">
-        {% if my_reviews %}
-            <div class="row">
-                {% for review in my_reviews %}
+        <div class="mb-4">
+            <h5>User Reviews About You</h5>
+            <p class="text-muted">Reviews from people you've taught or learned from</p>
+        </div>
+        
+        <!-- Skill Reviews (people reviewing you as a teacher) -->
+        {% if skill_reviews_received %}
+            <h6 class="mb-3">As a Teacher/Tutor</h6>
+            <div class="row mb-4">
+                {% for review in skill_reviews_received %}
                     <div class="col-lg-6 mb-4">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5>{{ review.skill.title }}</h5>
-                                <p class="text-muted">
-                                    <i class="fas fa-user"></i> Reviewed by <strong>{{ review.reviewer.username }}</strong>
-                                </p>
-                                
-                                <!-- Rating stars -->
-                                <div class="stars mb-2">
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= review.rating %}
-                                            <i class="fas fa-star"></i>
-                                        {% else %}
-                                            <i class="far fa-star"></i>
-                                        {% endif %}
-                                    {% endfor %}
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6>{{ review.skill.title }}</h6>
+                                        <p class="text-muted">
+                                            <i class="fas fa-user"></i> Reviewed by <strong>{{ review.reviewer.username }}</strong>
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="stars">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">{{ review.rating }}/5</small>
+                                    </div>
                                 </div>
                                 
                                 {% if review.comment %}
-                                    <p class="text-muted">{{ review.comment }}</p>
+                                    <p class="text-muted mb-2">{{ review.comment }}</p>
+                                {% endif %}
+                                
+                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Learner Reviews (people reviewing you as a learner) -->
+        {% if learner_reviews_received %}
+            <h6 class="mb-3">As a Learner/Student</h6>
+            <div class="row mb-4">
+                {% for review in learner_reviews_received %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6>{{ review.skill.title }}</h6>
+                                        <p class="text-muted">
+                                            <i class="fas fa-user"></i> Reviewed by <strong>{{ review.reviewer.username }}</strong>
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="stars">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">{{ review.rating }}/5</small>
+                                    </div>
+                                </div>
+                                
+                                {% if review.comment %}
+                                    <p class="text-muted mb-2">{{ review.comment }}</p>
+                                {% endif %}
+                                
+                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if not skill_reviews_received and not learner_reviews_received %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-star text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No user reviews yet</h5>
+                    <p class="text-muted">Reviews from others will appear here</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- SESSION REVIEWS TAB - About Your Skills/Sessions -->
+    <div class="tab-pane fade" id="session-reviews" role="tabpanel">
+        <div class="mb-4">
+            <h5>Session Reviews</h5>
+            <p class="text-muted">Feedback on the skills you've taught</p>
+        </div>
+        
+        {% if skill_reviews_received %}
+            <div class="row">
+                {% for review in skill_reviews_received %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6><i class="fas fa-book"></i> {{ review.skill.title }}</h6>
+                                        <p class="text-muted mb-1">
+                                            Student: <strong>{{ review.reviewer.username }}</strong>
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="stars">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">{{ review.rating }}/5</small>
+                                    </div>
+                                </div>
+                                
+                                {% if review.comment %}
+                                    <p class="text-muted mb-2">{{ review.comment }}</p>
                                 {% endif %}
                                 
                                 <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
@@ -274,8 +389,8 @@
         {% else %}
             <div class="card">
                 <div class="card-body text-center py-5">
-                    <i class="fas fa-star text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="mt-3">No reviews yet</h5>
+                    <i class="fas fa-book text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No session reviews yet</h5>
                     <p class="text-muted">When students review your skills, they'll appear here</p>
                 </div>
             </div>

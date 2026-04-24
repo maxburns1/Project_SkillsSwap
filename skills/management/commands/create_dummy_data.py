@@ -63,6 +63,18 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write('Creating dummy data...')
         
+        # First, delete any reviews where the reviewer is the skill owner (self-reviews)
+        all_reviews = Review.objects.all()
+        deleted_count = 0
+        for review in all_reviews:
+            if review.reviewer == review.skill.owner:
+                self.stdout.write(self.style.WARNING(f'Deleting self-review by {review.reviewer.username} on {review.skill.title}'))
+                review.delete()
+                deleted_count += 1
+        
+        if deleted_count > 0:
+            self.stdout.write(self.style.WARNING(f'Cleaned up {deleted_count} self-reviews\n'))
+        
         # Clear existing data (optional)
         # User.objects.all().delete()
         # Skill.objects.all().delete()
@@ -219,53 +231,61 @@ class Command(BaseCommand):
         # Create reviews
         reviews_created = 0
         
-        # Define specific review scenarios with different ratings
-        positive_reviews = [
-            (5, 'Great experience! Very professional and knowledgeable.'),
-            (5, 'Excellent teaching! I learned a lot in this session.'),
-            (5, 'Highly recommend! Very patient and friendly.'),
-            (5, 'Amazing! Will definitely book again.'),
-            (4, 'Very good instructor, knew the material well.'),
-            (4, 'Good session, would recommend to others.'),
-            (4, 'Helpful and responsive to questions.'),
+        # SESSION/SKILL REVIEWS - Comments about the teaching quality and session
+        session_positive_reviews = [
+            (5, 'Excellent teaching! Very clear and easy to follow.'),
+            (5, 'Learned so much! Great instructor!'),
+            (5, 'Well-organized session. Very professional.'),
+            (4, 'Good explanation of concepts. Would recommend.'),
+            (4, 'Covered the material thoroughly.'),
+            (4, 'Engaging and informative session.'),
         ]
         
-        negative_reviews = [
-            (2, 'Disorganized. Could not explain concepts clearly.'),
-            (2, 'Wasted my time. Not prepared at all.'),
-            (1, 'Very unprofessional. Did not show up on time.'),
-            (1, 'Terrible experience. Money wasted.'),
-            (2, 'Not what was described. Disappointing.'),
+        session_neutral_reviews = [
+            (3, 'Session was okay but could be better organized.'),
+            (3, 'Learned some things but pace was off.'),
+            (3, 'Average session, nothing special.'),
         ]
         
-        neutral_reviews = [
-            (3, 'It was okay. Some things were helpful, others not so much.'),
-            (3, 'Average experience. Nothing special.'),
-            (3, 'Acceptable but could be better organized.'),
+        session_negative_reviews = [
+            (2, 'Confusing explanations. Hard to follow.'),
+            (2, 'Did not learn much from this session.'),
+            (1, 'Poorly prepared. Wasted my time.'),
+            (1, 'Very confusing and disorganized.'),
         ]
         
-        positive_learner_reviews = [
-            (5, 'Great student! Very engaged and eager to learn.'),
-            (5, 'Excellent attitude and quick learner.'),
-            (5, 'Very motivated. Pleasure to teach!'),
-            (5, 'Attentive and respectful. A pleasure to work with.'),
-            (4, 'Good student, shows dedication to learning.'),
-            (4, 'Responsive and willing to practice.'),
+        # USER REVIEWS - Comments about the person's personality and professionalism
+        user_positive_reviews = [
+            (5, 'Friendly and approachable! Great person to work with.'),
+            (5, 'Very professional and reliable.'),
+            (5, 'Excellent communicator. Easy to talk to.'),
+            (4, 'Nice person. Helpful and responsive.'),
+            (4, 'Professional and personable.'),
+            (4, 'Great attitude and very dependable.'),
         ]
         
-        negative_learner_reviews = [
-            (1, 'Not interested. Did not pay attention at all.'),
-            (1, 'Rude and disrespectful throughout the session.'),
-            (2, 'Did not follow instructions. Wasted time.'),
-            (2, 'No effort shown. Very disappointing.'),
+        user_neutral_reviews = [
+            (3, 'Okay person to work with. Nothing special.'),
+            (3, 'Decent enough but somewhat distant.'),
+            (3, 'Adequate communication and support.'),
         ]
         
-        # Create skill reviews (learner reviews teacher/skill) with varied ratings
+        user_negative_reviews = [
+            (2, 'Not very friendly. Hard to communicate with.'),
+            (2, 'Seems unreliable. Missed appointments.'),
+            (1, 'Rude and dismissive. Poor communication.'),
+            (1, 'Very unprofessional and unfriendly.'),
+        ]
+        
+        # Create skill reviews (learner reviews teacher's teaching quality) with varied ratings
         completed_bookings = BookingRequest.objects.filter(status='completed').order_by('?')
         first_half = completed_bookings[:len(completed_bookings)//2]
         
         for booking in first_half:
-            # Check if review already exists
+            # Check if review already exists and requester is not the skill owner
+            if booking.requester == booking.skill.owner:
+                continue  # Skip if reviewer is the skill owner
+            
             existing = Review.objects.filter(
                 skill=booking.skill,
                 reviewer=booking.requester,
@@ -277,11 +297,11 @@ class Command(BaseCommand):
                 # Choose positive, neutral, or negative review
                 rand = random.random()
                 if rand < 0.7:  # 70% positive
-                    rating, comment = random.choice(positive_reviews)
+                    rating, comment = random.choice(session_positive_reviews)
                 elif rand < 0.85:  # 15% neutral
-                    rating, comment = random.choice(neutral_reviews)
+                    rating, comment = random.choice(session_neutral_reviews)
                 else:  # 15% negative
-                    rating, comment = random.choice(negative_reviews)
+                    rating, comment = random.choice(session_negative_reviews)
                 
                 review = Review.objects.create(
                     skill=booking.skill,
@@ -292,13 +312,16 @@ class Command(BaseCommand):
                     comment=comment
                 )
                 reviews_created += 1
-                self.stdout.write(f'Created skill review: {booking.requester.username} reviewed {booking.skill.owner.username} ({rating}★)')
+                self.stdout.write(f'Created session review: {booking.requester.username} reviewed {booking.skill.owner.username} ({rating}★)')
         
-        # Create learner reviews (teacher reviews learner) with varied ratings
+        # Create learner reviews (teacher reviews learner's attitude) with varied ratings
         second_half = completed_bookings[len(completed_bookings)//2:]
         
         for booking in second_half:
-            # Check if review already exists
+            # Check if review already exists and reviewer is not the requester
+            if booking.skill.owner == booking.requester:
+                continue  # Skip if both are same person
+            
             existing = Review.objects.filter(
                 skill=booking.skill,
                 reviewer=booking.skill.owner,
@@ -310,9 +333,9 @@ class Command(BaseCommand):
                 # Choose positive or negative learner review
                 rand = random.random()
                 if rand < 0.75:  # 75% positive
-                    rating, comment = random.choice(positive_learner_reviews)
+                    rating, comment = random.choice(session_positive_reviews)
                 else:  # 25% negative
-                    rating, comment = random.choice(negative_learner_reviews)
+                    rating, comment = random.choice(session_negative_reviews)
                 
                 review = Review.objects.create(
                     skill=booking.skill,
@@ -325,6 +348,54 @@ class Command(BaseCommand):
                 )
                 reviews_created += 1
                 self.stdout.write(f'Created learner review: {booking.skill.owner.username} reviewed {booking.requester.username} ({rating}★)')
+        
+        # Create additional learner reviews to diversify reviews about personality
+        # These reviews focus on the person's friendliness and professionalism (not just from bookings)
+        for _ in range(10):
+            reviewer = random.choice(users)
+            reviewed_user = random.choice([u for u in users if u != reviewer])
+            # Pick any skill, preferring ones owned by the reviewed_user to create personality reviews
+            possible_skills = [s for s in skills if s.owner == reviewed_user]
+            if not possible_skills:
+                skill = random.choice(skills)
+            else:
+                skill = random.choice(possible_skills)
+            
+            # Don't allow someone to review their own skills
+            if reviewer == skill.owner:
+                continue
+            
+            # Check if this review already exists
+            existing = Review.objects.filter(
+                skill=skill,
+                reviewer=reviewer,
+                reviewed_user=reviewed_user,
+                review_type='learner_review'
+            ).first()
+            
+            if not existing:
+                # Choose positive or negative personality review (about the person)
+                rand = random.random()
+                if rand < 0.6:  # 60% positive
+                    rating, comment = random.choice(user_positive_reviews)
+                elif rand < 0.8:  # 20% neutral
+                    rating, comment = random.choice(user_neutral_reviews)
+                else:  # 20% negative
+                    rating, comment = random.choice(user_negative_reviews)
+                
+                try:
+                    review = Review.objects.create(
+                        skill=skill,
+                        reviewer=reviewer,
+                        reviewed_user=reviewed_user,
+                        review_type='learner_review',
+                        rating=rating,
+                        comment=comment
+                    )
+                    reviews_created += 1
+                    self.stdout.write(f'Created personality review: {reviewer.username} reviewed {reviewed_user.username} ({rating}★)')
+                except:
+                    pass  # Skip if unique constraint fails
         
         self.stdout.write(self.style.SUCCESS(f'Created {reviews_created} reviews'))
         
